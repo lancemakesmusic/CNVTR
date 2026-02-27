@@ -1,0 +1,67 @@
+.terms-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.terms-modal {
+  max-width: 520px;
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.terms-logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.terms-modal h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.terms-content {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin-bottom: 1.5rem;
+}
+.terms-content ul {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+.terms-content li {
+  margin-bottom: 0.5rem;
+}
+.terms-content .terms-disclaimer {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.terms-accept {
+  width: 100%;
+  padding: 0.9rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: background 0.2s;
+}
+.terms-accept:hover {
+  background: var(--accent-hover);
+}

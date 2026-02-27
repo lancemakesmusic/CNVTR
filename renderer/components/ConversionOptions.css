@@ -1,0 +1,99 @@
+.conversion-options {
+  max-width: 720px;
+}
+
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.option-group label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.option-group select,
+.option-group input[type="number"],
+.output-dir-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 0.9rem;
+  min-width: 140px;
+}
+.option-group select:focus,
+.option-group input:focus,
+.output-dir-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.output-dir {
+  flex: 1;
+  min-width: 200px;
+}
+.output-dir-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.output-dir-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-small {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.checkboxes {
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.checkbox-label input {
+  accent-color: var(--accent);
+}
+
+.advanced-toggle-wrap {
+  margin-top: 0.75rem;
+}
+.advanced-toggle {
+  font-size: 0.9rem;
+  color: var(--accent);
+  padding: 0.35rem 0;
+  background: none;
+}
+.advanced-toggle:hover {
+  text-decoration: underline;
+}
+
+.advanced-options {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.advanced-options .options-row.trim {
+  margin-bottom: 0;
+}

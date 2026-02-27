@@ -1,0 +1,128 @@
+.app {
+  display: flex;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.app-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: var(--text-muted);
+}
+.app-loading .logo {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.requirements-banner {
+  padding: 0.65rem 1.25rem;
+  background: rgba(255, 82, 82, 0.12);
+  border-bottom: 1px solid rgba(255, 82, 82, 0.35);
+  color: var(--text);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.requirements-banner code {
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+.requirements-banner a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.requirements-banner a:hover {
+  text-decoration: underline;
+}
+
+.header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.header .logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.header .tagline {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.section {
+  padding: 1rem 1.5rem;
+}
+.url-section {
+  padding-top: 1.25rem;
+}
+.options-section {
+  padding-top: 0.5rem;
+}
+.queue-section {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar.history-panel {
+  width: 280px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-secondary);
+  transition: width 0.2s ease, margin 0.2s ease;
+  overflow: hidden;
+}
+.sidebar.history-panel.open {
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .sidebar.history-panel.open {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+    width: 280px;
+  }
+}
+
+.history-toggle {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 0.75rem 0.5rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  z-index: 5;
+  transition: color 0.2s, background 0.2s;
+}
+.history-toggle:hover {
+  color: var(--accent);
+  background: var(--bg-secondary);
+}

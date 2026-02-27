@@ -1,0 +1,72 @@
+.history-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.history-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.history-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  border-radius: 6px;
+}
+.history-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text);
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.history-empty {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.history-item {
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.history-item-name {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.history-item-open {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-align: left;
+  padding: 0;
+}
+.history-item-open:hover {
+  text-decoration: underline;
+}
