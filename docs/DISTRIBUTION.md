@@ -11,7 +11,7 @@ On your machine, run:
 | Platform | Command | Output |
 |----------|---------|--------|
 | **Windows** | `npm run build:win` | `release/CNVTR Setup 1.0.0.exe` (installer) |
-| **macOS** | `npm run build:mac` | `release/CNVTR-1.0.0.dmg` |
+| **macOS** | `npm run build:mac` | `release/CNVTR-1.0.0-arm64.dmg` (or `-x64` on Intel; see `release/*.dmg`) |
 
 - Build **Windows** installers on a Windows PC.
 - Build **macOS** installers on a Mac (or use CI; see below).
@@ -19,7 +19,7 @@ On your machine, run:
 After the build, the `release/` folder contains:
 
 - **Windows:** `CNVTR Setup 1.0.0.exe` (run this to install), plus `win-unpacked/` (portable folder).
-- **macOS:** `CNVTR-1.0.0.dmg` (disk image users double‑click to install).
+- **macOS:** `CNVTR-1.0.0-*.dmg` in `release/` (disk image users double‑click to install).
 
 Bump `version` in `package.json` before each release so filenames and the app’s “About” show the right version.
 
@@ -55,12 +55,10 @@ Users click “Download” for their OS. No cost, no server to maintain.
 
 ## 3. What users need (dependencies)
 
-- **yt-dlp:** Already bundled if you have the `yt-dlp/` folder in the project (it’s included in the installer). Otherwise users must install it.
-- **FFmpeg:** Not bundled by default. Either:
-  - Tell users to install FFmpeg and add it to PATH (document in README / download page), or
-  - Bundle FFmpeg in the app (e.g. put it in `ffmpeg/` and ship it; your backend already supports that).
+- **yt-dlp:** Fetched automatically when you run `npm run build:*` (`bundle:deps` script) and shipped inside the app.
+- **FFmpeg / ffprobe:** Bundled via the `ffmpeg-static` and `ffprobe-static` dependencies (no separate install for end users).
 
-Mention on the download page: “Requires FFmpeg on your system PATH, or download the version that includes FFmpeg.”
+Optional: ship custom binaries in `yt-dlp/` or `ffmpeg/` in the repo before building; the app prefers those paths.
 
 ---
 
@@ -101,10 +99,12 @@ The workflow (`.github/workflows/release.yml`) runs `npm run build:win` on Windo
 ## 6. Checklist before publishing
 
 - [ ] Bump `version` in `package.json`.
-- [ ] Ensure `yt-dlp/` (and optionally `ffmpeg/`) is in the repo so the installer includes them.
-- [ ] Add `assets/icon.ico` (Windows) and `assets/icon.icns` (macOS) so the app has an icon.
-- [ ] Run `npm run build:win` (and/or `build:mac`) and test the installer on a clean machine or VM.
-- [ ] Write release notes and document FFmpeg requirement (or that it’s bundled).
+- [ ] Run `npm run build:win` / `npm run build:mac` (these run `bundle:deps` and download **yt-dlp** for that OS). Network required for the download step.
+- [ ] (Optional) Add `assets/icon.ico` and `assets/icon.icns` for custom branding.
+- [ ] Test the installer from `release/` on a clean Mac or VM (unsigned Mac apps may need **Right‑click → Open** the first time).
+- [ ] Write release notes (requirements: macOS / Windows version, internet for downloads).
 - [ ] Upload the installer(s) to GitHub Releases (or your site) and link from the download page.
+
+Build configuration lives in **`electron-builder.config.js`** (referenced from `package.json` via `"extends"`).
 
 After that, you can share the release or download link so others can install CNVTR like any other program.

@@ -1,21 +1,44 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const { getAppRoot } = require('./paths');
+const { getAppRoot, resolveAsarBinaryPath } = require('./paths');
 
 function getFfmpegDir() {
   return path.join(getAppRoot(), 'ffmpeg');
+}
+
+function getNpmFfmpegPath() {
+  try {
+    const p = require('ffmpeg-static');
+    if (!p) return null;
+    return resolveAsarBinaryPath(p);
+  } catch {
+    return null;
+  }
+}
+
+function getNpmFfprobePath() {
+  try {
+    const mod = require('ffprobe-static');
+    const p = mod && mod.path;
+    if (!p) return null;
+    return resolveAsarBinaryPath(p);
+  } catch {
+    return null;
+  }
 }
 
 function getFfmpegPath() {
   const ffmpegDir = getFfmpegDir();
   if (process.platform === 'win32') {
     const exe = path.join(ffmpegDir, 'ffmpeg.exe');
-    if (fs.existsSync(exe)) return path.join(ffmpegDir, 'ffmpeg.exe');
+    if (fs.existsSync(exe)) return exe;
   } else {
     const exe = path.join(ffmpegDir, 'ffmpeg');
     if (fs.existsSync(exe)) return exe;
   }
+  const npmFf = getNpmFfmpegPath();
+  if (npmFf && fs.existsSync(npmFf)) return npmFf;
   return 'ffmpeg';
 }
 
@@ -56,9 +79,13 @@ function convert(opts) {
   const ff = getFfmpegPath();
   if (ff !== 'ffmpeg') {
     ffmpeg.setFfmpegPath(ff);
-    const ffprobe = process.platform === 'win32'
+    let ffprobe = process.platform === 'win32'
       ? path.join(getFfmpegDir(), 'ffprobe.exe')
       : path.join(getFfmpegDir(), 'ffprobe');
+    if (!fs.existsSync(ffprobe)) {
+      const npmProbe = getNpmFfprobePath();
+      if (npmProbe && fs.existsSync(npmProbe)) ffprobe = npmProbe;
+    }
     if (fs.existsSync(ffprobe)) {
       ffmpeg.setFfprobePath(ffprobe);
     }

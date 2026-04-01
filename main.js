@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -9,7 +10,7 @@ let mainWindow = null;
 const preloadPath = path.join(__dirname, 'preload.js');
 const indexUrl = isDev
   ? 'http://localhost:5173'
-  : `file://${path.join(__dirname, 'dist', 'index.html')}`;
+  : pathToFileURL(path.join(__dirname, 'dist', 'index.html')).href;
 
 function createWindow() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
