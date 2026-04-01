@@ -5,6 +5,14 @@
 - **Professional grade** — 320kbps MP3, lossless WAV, metadata & album art
 - **Batch processing** — Queue multiple URLs, pause/resume/cancel
 - **Modern dark UI** — Matte black + electric blue, minimal and fast
+- **One desktop app** — Frontend (React) and backend (Node in Electron main) ship together; no separate server. You only need **internet** to fetch media from URLs.
+
+### Self-contained installers
+
+When you build the app with **`yt-dlp/`** and **`ffmpeg/`** populated in the project, the installer includes them and unpacks them next to the app (not inside the ASAR archive) so they **run without** installing yt-dlp or FFmpeg on PATH. Users still need network access to download from YouTube and other sites.
+
+- **Windows:** `yt-dlp/yt-dlp.exe`, `ffmpeg/ffmpeg.exe` (+ DLLs from a shared FFmpeg build), `ffmpeg/ffprobe.exe` optional but recommended.  
+- **macOS:** `yt-dlp/yt-dlp_macos` (or `yt-dlp`), and a macOS **`ffmpeg`** binary in `ffmpeg/` before `npm run build:mac`.
 
 ---
 

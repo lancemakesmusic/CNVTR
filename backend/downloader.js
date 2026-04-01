@@ -2,11 +2,10 @@ const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { validateUrls, detectPlatform } = require('./platforms');
-
-const appRoot = path.resolve(__dirname, '..');
+const { getAppRoot } = require('./paths');
 
 function getYtDlpPath() {
-  const dir = path.join(appRoot, 'yt-dlp');
+  const dir = path.join(getAppRoot(), 'yt-dlp');
   const localWin = path.join(dir, 'yt-dlp.exe');
   const localMac = path.join(dir, 'yt-dlp_macos');
   const localUnix = path.join(dir, 'yt-dlp');
@@ -17,7 +16,7 @@ function getYtDlpPath() {
 }
 
 function getYtDlpMissingMessage() {
-  const ytDlpDir = path.join(appRoot, 'yt-dlp');
+  const ytDlpDir = path.join(getAppRoot(), 'yt-dlp');
   const name = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
   return (
     `yt-dlp was not found. Install it and add it to your system PATH, or place ${name} in this folder:\n${ytDlpDir}\n\n` +

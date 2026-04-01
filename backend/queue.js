@@ -31,15 +31,21 @@ function getOutputPath(outputDir, info, format, template) {
   const title = safe(info?.title);
   const artist = safe(info?.uploader || info?.artist);
   const ext = format === 'wav' ? '.wav' : format === 'flac' ? '.flac' : '.mp3';
-  let name;
+  let baseName;
   if (template === 'artist-title') {
-    name = `${artist} - ${title}`;
+    baseName = `${artist} - ${title}`;
   } else if (template === 'title') {
-    name = title;
+    baseName = title;
   } else {
-    name = `${artist} - ${title}`;
+    baseName = `${artist} - ${title}`;
   }
-  return path.join(outputDir, `${name}${ext}`);
+  let candidate = path.join(outputDir, `${baseName}${ext}`);
+  let n = 0;
+  while (fs.existsSync(candidate)) {
+    n++;
+    candidate = path.join(outputDir, `${baseName} (${n})${ext}`);
+  }
+  return candidate;
 }
 
 function formatOptions(userOptions) {
@@ -133,7 +139,9 @@ async function processOne(itemId, url, options, outputDir, openFolderWhenDone) {
 }
 
 async function runQueue(options, openFolderWhenDone) {
-  const { urls, outputDir, ...userOptions } = options;
+  const urls = Array.isArray(options?.urls) ? options.urls : [];
+  if (urls.length === 0) return;
+  const { outputDir, ...userOptions } = options || {};
   const output = outputDir || path.join(app.getPath('downloads'), 'CNVTR');
   state.running = true;
   state.canceled = false;
@@ -165,6 +173,9 @@ async function runQueue(options, openFolderWhenDone) {
 }
 
 function startJob(options, send) {
+  if (!options || !Array.isArray(options.urls) || options.urls.length === 0) {
+    return { ok: false, error: 'No URLs provided' };
+  }
   sendToRenderer = send;
   runQueue(options, options.openFolderWhenDone).catch((e) => {
     sendToRenderer('queue-error', { error: e.message });

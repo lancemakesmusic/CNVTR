@@ -30,22 +30,24 @@ export default function App() {
   const [logLines, setLogLines] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [requirements, setRequirements] = useState({ ytDlpOk: true });
+  const [requirements, setRequirements] = useState({ ytDlpOk: true, ffmpegOk: true });
 
   useEffect(() => {
-    window.cnvtr.checkRequirements?.().then(setRequirements).catch(() => setRequirements({ ytDlpOk: false }));
+    window.cnvtr?.checkRequirements?.()
+      .then(setRequirements)
+      .catch(() => setRequirements({ ytDlpOk: false, ffmpegOk: false }));
   }, []);
 
   useEffect(() => {
-    window.cnvtr.termsCheck().then((accepted) => {
-      setTermsAccepted(accepted);
+    window.cnvtr?.termsCheck?.().then((accepted) => {
+      setTermsAccepted(!!accepted);
       setTermsChecked(true);
-    });
-    window.cnvtr.getDefaultOutputDir().then(setOutputDir);
+    }).catch(() => { setTermsAccepted(false); setTermsChecked(true); });
+    window.cnvtr?.getDefaultOutputDir?.().then((d) => d != null && setOutputDir(d)).catch(() => {});
   }, []);
 
   const handleTermsAccept = useCallback(() => {
-    window.cnvtr.termsAccepted();
+    window.cnvtr?.termsAccepted?.();
     setTermsAccepted(true);
   }, []);
 
@@ -54,28 +56,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsub = window.cnvtr.on('job-log', ({ line }) => addLog(line));
+    const unsub = window.cnvtr?.on('job-log', ({ line }) => addLog(line));
     return () => (typeof unsub === 'function' ? unsub() : undefined);
   }, [addLog]);
 
   useEffect(() => {
-    const unsub = window.cnvtr.on('queue-update', (data) => setQueue((prev) => ({ ...prev, ...data })));
+    const unsub = window.cnvtr?.on('queue-update', (data) => setQueue((prev) => ({ ...prev, ...data })));
     return () => (typeof unsub === 'function' ? unsub() : undefined);
   }, []);
 
   useEffect(() => {
-    const unsub = window.cnvtr.on('queue-finished', () => {
-      window.cnvtr.getQueueStatus().then((s) => setQueue((prev) => ({ ...prev, ...s })));
+    const unsub = window.cnvtr?.on('queue-error', ({ error }) => addLog(`Error: ${error || 'Unknown'}`));
+    return () => (typeof unsub === 'function' ? unsub() : undefined);
+  }, [addLog]);
+
+  useEffect(() => {
+    const unsub = window.cnvtr?.on('queue-finished', () => {
+      window.cnvtr?.getQueueStatus?.().then((s) => setQueue((prev) => ({ ...prev, ...s })));
     });
     return () => (typeof unsub === 'function' ? unsub() : undefined);
   }, []);
 
   useEffect(() => {
-    const unsub = window.cnvtr.on('job-done', ({ success, outputPath, openFolderWhenDone }) => {
+    const unsub = window.cnvtr?.on('job-done', ({ success, outputPath, openFolderWhenDone }) => {
       if (success && outputPath) {
         addLog(`Saved: ${outputPath}`);
-        window.cnvtr.historyAdd({ outputPath, success: true });
-        if (openFolderWhenDone) window.cnvtr.openFolder(outputPath.replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, ''));
+        window.cnvtr?.historyAdd?.({ outputPath, success: true });
+        if (openFolderWhenDone) {
+          const dir = outputPath.replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, '');
+          window.cnvtr?.openFolder?.(dir);
+        }
       }
     });
     return () => (typeof unsub === 'function' ? unsub() : undefined);
@@ -85,20 +95,20 @@ export default function App() {
     async (urls) => {
       if (!urls.length) return;
       addLog(`Starting batch: ${urls.length} URL(s)`);
-      await window.cnvtr.startJob({
+      const result = await window.cnvtr?.startJob?.({
         urls,
         outputDir: outputDir || undefined,
         ...options,
         openFolderWhenDone: options.openFolderWhenDone,
       });
-      const unsub = window.cnvtr.on('queue-update', (data) => setQueue((prev) => ({ ...prev, ...data })));
-      window.cnvtr.getQueueStatus().then((s) => setQueue((prev) => ({ ...prev, ...s })));
+      if (result?.ok === false && result?.error) addLog(`Error: ${result.error}`);
+      window.cnvtr?.getQueueStatus?.().then((s) => setQueue((prev) => ({ ...prev, ...s })));
     },
     [outputDir, options, addLog]
   );
 
   const handleSelectDir = useCallback(async () => {
-    const dir = await window.cnvtr.selectOutputDir();
+    const dir = await window.cnvtr?.selectOutputDir?.();
     if (dir) setOutputDir(dir);
   }, []);
 
@@ -127,12 +137,15 @@ export default function App() {
       )}
 
       <main className="main">
-        {!requirements.ytDlpOk && (
+        {(!requirements.ytDlpOk || !requirements.ffmpegOk) && (
           <div className="requirements-banner" role="alert">
-            <strong>yt-dlp not found.</strong>{' '}
-            Install it and add it to your system PATH, or place <code>yt-dlp.exe</code> in the app&apos;s <code>yt-dlp</code> folder.
-            {' '}
-            <a href="https://github.com/yt-dlp/yt-dlp/releases" target="_blank" rel="noopener noreferrer">Download yt-dlp</a>
+            {!requirements.ytDlpOk && (
+              <span><strong>yt-dlp not found.</strong> Install or place in app&apos;s <code>yt-dlp</code> folder. <a href="https://github.com/yt-dlp/yt-dlp/releases" target="_blank" rel="noopener noreferrer">Download</a></span>
+            )}
+            {!requirements.ytDlpOk && !requirements.ffmpegOk && ' '}
+            {!requirements.ffmpegOk && (
+              <span><strong>FFmpeg not found.</strong> Install and add to PATH, or place in app&apos;s <code>ffmpeg</code> folder. <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">Download</a></span>
+            )}
           </div>
         )}
         <header className="header">
@@ -158,9 +171,9 @@ export default function App() {
         <section className="section queue-section">
           <QueuePanel
             queue={queue}
-            onPause={() => window.cnvtr.queuePause()}
-            onResume={() => window.cnvtr.queueResume()}
-            onCancel={() => window.cnvtr.queueCancel()}
+            onPause={() => window.cnvtr?.queuePause?.()}
+            onResume={() => window.cnvtr?.queueResume?.()}
+            onCancel={() => window.cnvtr?.queueCancel?.()}
           />
         </section>
 

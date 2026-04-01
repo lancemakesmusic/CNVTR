@@ -42,7 +42,12 @@
       "preload.js",
       "backend/**/*",
       "assets/**/*",
-      "yt-dlp/**/*"
+      "yt-dlp/**/*",
+      "ffmpeg/**/*"
+    ],
+    "asarUnpack": [
+      "yt-dlp/**",
+      "ffmpeg/**"
     ],
     "win": {
       "target": ["nsis"],

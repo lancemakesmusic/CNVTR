@@ -25,6 +25,7 @@ function downloadImage(url) {
  * coverUrl: optional URL to thumbnail
  */
 async function embedMetadata(filePath, info, coverUrl) {
+  if (!filePath || typeof filePath !== 'string') return;
   const ext = path.extname(filePath).toLowerCase();
   if (ext !== '.mp3') {
     return; // Only ID3 for MP3; WAV/FLAC could use other libs later

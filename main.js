@@ -72,10 +72,26 @@ ipcMain.handle('open-folder', (_, dir) => {
   if (dir && fs.existsSync(dir)) shell.openPath(dir);
 });
 
-ipcMain.handle('check-requirements', () => ({
-  ytDlpOk: downloader.isYtDlpAvailable(),
-  ytDlpMessage: downloader.getYtDlpMissingMessage(),
-}));
+ipcMain.handle('check-requirements', () => {
+  let ytDlpOk = false;
+  let ffmpegOk = false;
+  try {
+    ytDlpOk = downloader.isYtDlpAvailable();
+  } catch (e) {
+    console.error('check yt-dlp', e);
+  }
+  try {
+    ffmpegOk = converter.isFfmpegAvailable();
+  } catch (e) {
+    console.error('check ffmpeg', e);
+  }
+  return {
+    ytDlpOk,
+    ytDlpMessage: downloader.getYtDlpMissingMessage(),
+    ffmpegOk,
+    ffmpegMessage: converter.getFfmpegMissingMessage(),
+  };
+});
 
 ipcMain.handle('validate-urls', (_, urls) => {
   return downloader.validateUrls(urls);
@@ -98,7 +114,9 @@ ipcMain.handle('queue-resume', () => queue.resume());
 ipcMain.handle('queue-cancel', () => queue.cancel());
 ipcMain.handle('get-queue-status', () => queue.getStatus());
 
-ipcMain.handle('embed-metadata', async (_, { filePath, info, coverUrl }) => {
+ipcMain.handle('embed-metadata', async (_, opts) => {
+  if (!opts || typeof opts !== 'object') return;
+  const { filePath, info, coverUrl } = opts;
   return metadata.embedMetadata(filePath, info, coverUrl);
 });
 
@@ -132,6 +150,7 @@ ipcMain.handle('history-get', () => {
 });
 
 ipcMain.handle('history-add', (_, entry) => {
+  if (!entry || typeof entry !== 'object') return;
   const storePath = path.join(app.getPath('userData'), 'history.json');
   try {
     let list = [];

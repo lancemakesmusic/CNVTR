@@ -24,7 +24,7 @@ export function UrlInput({ onConvert, addLog }) {
     setValidating(true);
     setValidationResult(null);
     try {
-      const results = await window.cnvtr.validateUrls(urls);
+      const results = await window.cnvtr?.validateUrls?.(urls) || [];
       const valid = results.filter((r) => r.valid);
       const invalid = results.filter((r) => !r.valid);
       setValidationResult({ valid, invalid, results });
@@ -43,7 +43,7 @@ export function UrlInput({ onConvert, addLog }) {
       addLog('Paste at least one URL.');
       return;
     }
-    const results = await window.cnvtr.validateUrls(urls);
+    const results = await window.cnvtr?.validateUrls?.(urls) || [];
     const validUrls = results.filter((r) => r.valid).map((r) => r.url);
     const invalid = results.filter((r) => !r.valid);
     invalid.forEach((r) => addLog(`Skipped: ${r.url} — ${r.error}`));

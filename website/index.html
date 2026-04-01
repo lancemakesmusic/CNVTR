@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNVTR — URL to Audio | Merkaba Entertainment</title>
+  <meta name="description" content="Convert YouTube, Instagram, TikTok, and more to high-quality MP3 or WAV. For creators, DJs, and producers. Free desktop app for Windows and Mac.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #888;
+      --accent: #00a8e8;
+      --accent-hover: #0090c8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+    header {
+      padding: 3rem 0 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .tagline {
+      font-size: 1.1rem;
+      color: var(--muted);
+    }
+    section {
+      padding: 2.5rem 0;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 1rem;
+    }
+    p { color: var(--muted); margin: 0 0 1rem; }
+    .downloads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.5rem;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .reqs {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .reqs ul { margin: 0.5rem 0 0; padding-left: 1.25rem; color: var(--muted); }
+    footer {
+      padding: 2rem 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">CNVTR</div>
+      <p class="tagline">Turn any public link into studio-ready audio</p>
+    </header>
+
+    <section>
+      <h2>Download</h2>
+      <p>Free desktop app for Windows and macOS. No account required. Runs entirely on your computer.</p>
+      <div class="downloads">
+        <a href="https://github.com/lancemakesmusic/CNVTR/releases/latest" class="btn" id="dl-win">
+          Download for Windows
+        </a>
+        <a href="https://github.com/lancemakesmusic/CNVTR/releases/latest" class="btn" id="dl-mac">
+          Download for Mac
+        </a>
+      </div>
+      <p style="font-size: 0.9rem;">Get the latest installers from <a href="https://github.com/lancemakesmusic/CNVTR/releases" style="color: var(--accent);">GitHub Releases</a>. Windows: run the .exe installer. Mac: open the .dmg and drag CNVTR to Applications.</p>
+    </section>
+
+    <section>
+      <h2>What it does</h2>
+      <p>Paste links from YouTube, Instagram, X (Twitter), TikTok, SoundCloud, Vimeo, or Facebook. Choose MP3 (up to 320 kbps) or WAV. Batch convert, add metadata and album art, pick your output folder. Built for DJs, producers, and editors.</p>
+    </section>
+
+    <section>
+      <h2>Requirements</h2>
+      <p>CNVTR includes yt-dlp. You need <strong>FFmpeg</strong> on your system for conversion:</p>
+      <div class="reqs">
+        <ul>
+          <li><strong>Windows:</strong> <a href="https://www.gyan.dev/ffmpeg/builds/" target="_blank" rel="noopener" style="color: var(--accent);">Download FFmpeg</a>, extract, and add the <code>bin</code> folder to your system PATH.</li>
+          <li><strong>Mac:</strong> <code>brew install ffmpeg</code> (or download from <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener" style="color: var(--accent);">ffmpeg.org</a>).</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Legal</h2>
+      <p>Only use with <strong>public</strong> content you have the right to use. No DRM bypass. You are responsible for respecting copyright and platform terms.</p>
+    </section>
+
+    <footer>
+      <a href="https://github.com/lancemakesmusic/CNVTR">Source code</a> · 
+      <a href="https://merkabaent.com">Merkaba Entertainment</a>
+    </footer>
+  </div>
+  <script>
+    (function() {
+      var ua = navigator.userAgent.toLowerCase();
+      var win = document.getElementById('dl-win');
+      var mac = document.getElementById('dl-mac');
+      if (win && mac) {
+        if (ua.indexOf('mac') !== -1) { mac.classList.add('primary'); win.classList.add('secondary'); }
+        else { win.classList.add('primary'); mac.classList.add('secondary'); }
+      }
+    })();
+  </script>
+</body>
+</html>
