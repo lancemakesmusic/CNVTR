@@ -30,7 +30,13 @@ function getOutputPath(outputDir, info, format, template) {
   const safe = (s) => (s || 'Unknown').replace(/[<>:"/\\|?*]/g, '_').slice(0, 100);
   const title = safe(info?.title);
   const artist = safe(info?.uploader || info?.artist);
-  const ext = format === 'wav' ? '.wav' : format === 'flac' ? '.flac' : '.mp3';
+  const ext = format === 'wav'
+    ? '.wav'
+    : format === 'flac'
+      ? '.flac'
+      : format === 'mp4'
+        ? '.mp4'
+        : '.mp3';
   let baseName;
   if (template === 'artist-title') {
     baseName = `${artist} - ${title}`;
@@ -55,7 +61,7 @@ function formatOptions(userOptions) {
   const bitrate = userOptions?.bitrate ?? bitrateMap[quality] ?? 320;
   const sampleRate = userOptions?.sampleRate || 44100;
   return {
-    format: format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : 'mp3',
+    format: format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : format === 'mp4' ? 'mp4' : 'mp3',
     bitrate: format === 'mp3' ? bitrate : 320,
     sampleRate: Number(sampleRate) || 44100,
     normalize: !!userOptions?.normalize,
@@ -87,32 +93,44 @@ async function processOne(itemId, url, options, outputDir, openFolderWhenDone) {
     job.info = info;
 
     emit('job-progress', { id: itemId, phase: 'download', percent: 5 });
-    inputPath = await downloader.downloadAudioOnly(url, (line) => {
-      emit('job-log', { id: itemId, line });
-    });
+    if (opts.format === 'mp4') {
+      inputPath = await downloader.downloadVideoMp4(url, (line) => {
+        emit('job-log', { id: itemId, line });
+      });
+    } else {
+      inputPath = await downloader.downloadAudioOnly(url, (line) => {
+        emit('job-log', { id: itemId, line });
+      });
+    }
     emit('job-progress', { id: itemId, phase: 'download', percent: 70 });
 
     outputPath = getOutputPath(outputDir, info, opts.format, opts.fileNameTemplate);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
-    job.status = 'converting';
-    emit('queue-update', { jobs: state.jobs });
-    emit('job-progress', { id: itemId, phase: 'convert', percent: 75 });
-    await converter.convert({
-      inputPath,
-      outputPath,
-      format: opts.format,
-      bitrate: opts.bitrate,
-      sampleRate: opts.sampleRate,
-      normalize: opts.normalize,
-      trimStart: opts.trimStart,
-      trimEnd: opts.trimEnd,
-      mono: opts.mono,
-      removeSilence: opts.removeSilence,
-      onProgress: (p) => {
-        emit('job-progress', { id: itemId, phase: 'convert', percent: 75 + (p * 0.2) });
-      },
-    });
+    if (opts.format === 'mp4') {
+      // MP4 is already produced by yt-dlp; just move into final output folder.
+      fs.renameSync(inputPath, outputPath);
+      inputPath = null;
+    } else {
+      job.status = 'converting';
+      emit('queue-update', { jobs: state.jobs });
+      emit('job-progress', { id: itemId, phase: 'convert', percent: 75 });
+      await converter.convert({
+        inputPath,
+        outputPath,
+        format: opts.format,
+        bitrate: opts.bitrate,
+        sampleRate: opts.sampleRate,
+        normalize: opts.normalize,
+        trimStart: opts.trimStart,
+        trimEnd: opts.trimEnd,
+        mono: opts.mono,
+        removeSilence: opts.removeSilence,
+        onProgress: (p) => {
+          emit('job-progress', { id: itemId, phase: 'convert', percent: 75 + (p * 0.2) });
+        },
+      });
+    }
 
     if (opts.format === 'mp3' && info.thumbnail) {
       await metadata.embedMetadata(outputPath, info, info.thumbnail);

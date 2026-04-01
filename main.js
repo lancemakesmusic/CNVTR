@@ -20,7 +20,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0a0a0a',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // Keep native macOS title bar so window is always draggable.
+    titleBarStyle: 'default',
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

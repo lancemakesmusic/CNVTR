@@ -1,6 +1,6 @@
 {
   "name": "cnvtr",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Convert public media URLs to high-quality audio (MP3, WAV) for creators, DJs, and producers",
   "main": "main.js",
   "author": "CNVTR",

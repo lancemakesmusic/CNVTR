@@ -4,6 +4,7 @@ const FORMATS = [
   { value: 'mp3', label: 'MP3' },
   { value: 'wav', label: 'WAV (lossless)' },
   { value: 'flac', label: 'FLAC' },
+  { value: 'mp4', label: 'MP4 (video)' },
 ];
 
 const QUALITY = [
