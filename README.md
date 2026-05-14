@@ -7,31 +7,24 @@
 - **Modern dark UI** — Matte black + electric blue, minimal and fast
 - **One desktop app** — Frontend (React) and backend (Node in Electron main) ship together; no separate server. You only need **internet** to fetch media from URLs.
 
-## Download (for people who only want the app)
+### Download for Mac / Windows (installers)
 
-**After you publish to your own GitHub repo**, share this link (replace `YourUsername` and `CNVTR` if your repo path differs):
+**Latest release:** [github.com/lancemakesmusic/CNVTR/releases/latest](https://github.com/lancemakesmusic/CNVTR/releases/latest) — open **Assets**, download the `.dmg` (Mac) or `.exe` (Windows).
 
-**[Latest installers → `https://github.com/YourUsername/CNVTR/releases/latest`](https://github.com/YourUsername/CNVTR/releases/latest)**
-
-- **Windows:** download the `.exe` setup, run it, install like any desktop app.  
-- **macOS:** download the `.dmg`, open it, drag CNVTR to Applications (Apple Silicon build from CI; see [docs/SHARE-ON-GITHUB.md](docs/SHARE-ON-GITHUB.md)).
-
-**Maintainers:** first-time setup to push the project and auto-publish releases is in **[docs/SHARE-ON-GITHUB.md](docs/SHARE-ON-GITHUB.md)**. Tag a release with `git tag v1.0.0 && git push origin v1.0.0` after your code is on GitHub.
+**Forking or publishing under your own account:** see **[docs/SHARE-ON-GITHUB.md](docs/SHARE-ON-GITHUB.md)** (first push + tag to auto-publish). Team quick reference: **[docs/SHARE-WITH-COWORKERS.md](docs/SHARE-WITH-COWORKERS.md)**.
 
 ### Self-contained installers
 
-**GitHub Actions** (see `.github/workflows/release.yml`) downloads current **yt-dlp** and **FFmpeg** into `yt-dlp/` and `ffmpeg/` before building, so published installers are **all-in-one** for end users (no separate FFmpeg install). Locally, when you build the app with **`yt-dlp/`** and **`ffmpeg/`** populated yourself, the installer includes them the same way. Binaries unpack next to the app (not inside the ASAR archive). Users still need **internet** to fetch from YouTube and other sites.
+Release builds run **`npm run bundle:deps`**, which downloads the official **yt-dlp** binary into `yt-dlp/`. **FFmpeg** and **ffprobe** come from the **`ffmpeg-static`** and **`ffprobe-static`** npm packages and are unpacked with the app so end users **do not** need FFmpeg on PATH. GitHub Actions runs the same steps before building installers. Users still need **network access** to fetch media.
 
-- **Windows:** `yt-dlp/yt-dlp.exe`, `ffmpeg/ffmpeg.exe` (+ DLLs from a shared FFmpeg build), `ffmpeg/ffprobe.exe` optional but recommended.  
-- **macOS:** `yt-dlp/yt-dlp_macos` (or `yt-dlp`), and a macOS **`ffmpeg`** binary in `ffmpeg/` before `npm run build:mac`.
+Optional overrides: put your own **`ffmpeg/`** (and **`ffprobe`**) or **`yt-dlp/`** binaries in the project folder — the app prefers those over the bundled tools.
 
 ---
 
 ## Requirements
 
-- **Node.js** 18+
-- **yt-dlp** — [Install](https://github.com/yt-dlp/yt-dlp#installation) and ensure `yt-dlp` (or `yt-dlp.exe` on Windows) is on your PATH, or place it in `CNVTR/yt-dlp/`
-- **FFmpeg** — [Install](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, or place it in `CNVTR/ffmpeg/`
+- **Node.js** 18+ (for building from source)
+- **To develop without bundling:** `yt-dlp` and/or **FFmpeg** on your PATH, or place binaries in `yt-dlp/` and `ffmpeg/` as described in `yt-dlp/README.md` and `ffmpeg/README.md`
 
 ---
 
@@ -57,11 +50,13 @@ npm run build:win    # Windows (NSIS .exe installer)
 npm run build:mac    # macOS (.dmg)
 ```
 
-Output is in `release/`. For Windows you need `assets/icon.ico`; for macOS, `assets/icon.icns`. See `assets/ICONS.md`.  
-On Windows, the build disables code signing by default (`signAndEditExecutable: false`) so the installer can be created without elevated privileges.
+Output is in `release/`. Icons are optional: add `assets/icon.ico` and/or `assets/icon.icns` for branded installers (see `assets/ICONS.md`); otherwise the default Electron icon is used.
 
-**Distributing to other computers:** See **[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)** for packaging, hosting (e.g. GitHub Releases), code signing, and CI.  
-**Security / quality posture:** See **[docs/ENTERPRISE-POSTURE.md](docs/ENTERPRISE-POSTURE.md)** for sandboxing, IPC allowlists, path policy, logging, tests, and CI.
+**macOS (unsigned builds):** The first open may be blocked by Gatekeeper. Users can **right‑click the app → Open**, or run `xattr -dr com.apple.quarantine /path/to/CNVTR.app` after copying the app. For wide distribution, use an Apple Developer ID certificate and notarize the app (see `docs/DISTRIBUTION.md`).
+
+On Windows, code signing is disabled by default so you can build without a certificate.
+
+**Distributing & hosting:** **[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)** · **Security / quality posture:** **[docs/ENTERPRISE-POSTURE.md](docs/ENTERPRISE-POSTURE.md)**
 
 ---
 
@@ -112,10 +107,10 @@ CNVTR/
 
 ---
 
-## Optional: bundled yt-dlp / FFmpeg
+## Optional: override bundled yt-dlp / FFmpeg
 
-- **yt-dlp:** Put `yt-dlp` (Unix) or `yt-dlp.exe` (Windows) in `CNVTR/yt-dlp/`. The app will use it instead of PATH.
-- **FFmpeg:** Put `ffmpeg` (and optionally `ffprobe`) in `CNVTR/ffmpeg/` (or `ffmpeg.exe` on Windows). The app will use it instead of PATH.
+- **yt-dlp:** Put `yt-dlp`, `yt-dlp_macos`, or `yt-dlp.exe` in `yt-dlp/` (or use PATH). The app checks the project folder first.
+- **FFmpeg:** Put `ffmpeg` and optionally `ffprobe` in `ffmpeg/` (or `ffmpeg.exe` / `ffprobe.exe` on Windows). Overrides the npm-bundled binaries when present.
 
 ---
 

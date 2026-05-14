@@ -66,8 +66,12 @@ function runYtDlp(args, options = {}) {
     });
     let stdout = '';
     let stderr = '';
-    proc.stdout?.on('data', (d) => { stdout += d.toString(); });
-    proc.stderr?.on('data', (d) => { stderr += d.toString(); });
+    proc.stdout?.on('data', (d) => {
+      stdout += d.toString();
+    });
+    proc.stderr?.on('data', (d) => {
+      stderr += d.toString();
+    });
     proc.on('error', (err) => reject(new Error(normalizeYtDlpError(err))));
     proc.on('close', (code) => {
       if (code !== 0) {
@@ -82,16 +86,10 @@ function runYtDlp(args, options = {}) {
   });
 }
 
-/**
- * Validate a list of URLs. Returns array of { url, valid, error?, platform? }.
- */
 function validateUrlsFromBackend(urls) {
   return validateUrls(Array.isArray(urls) ? urls : [urls].filter(Boolean));
 }
 
-/**
- * Fetch info for a single URL (JSON). Uses yt-dlp -j.
- */
 async function fetchInfo(url) {
   const platform = detectPlatform(url);
   if (!platform) {
@@ -127,9 +125,51 @@ async function fetchInfo(url) {
   }
 }
 
-/**
- * Download best audio only to a temp file. Returns path to the downloaded file.
- */
+function attachYtDlpSpawnHandlers(proc, outTemplate, progressCb, resolve, reject) {
+  let lastPath = null;
+  let stderr = '';
+  const onLine = (line) => {
+    const s = line.toString().trim();
+    if (progressCb && s.startsWith('[download]')) progressCb(s);
+    const match = s.match(/Destination:\s*(.+)/);
+    if (match) lastPath = match[1].trim();
+  };
+  proc.stdout?.on('data', (d) => d.toString().split('\n').forEach(onLine));
+  proc.stderr?.on('data', (d) => {
+    const t = d.toString();
+    stderr += t;
+    t.split('\n').forEach(onLine);
+  });
+  proc.on('error', (err) => {
+    if (activeDownloadProc === proc) activeDownloadProc = null;
+    reject(new Error(normalizeYtDlpError(err)));
+  });
+  proc.on('close', (code) => {
+    if (activeDownloadProc === proc) activeDownloadProc = null;
+    const dir = path.dirname(outTemplate);
+    const findInDir = () => {
+      try {
+        const files = fs.readdirSync(dir).filter((f) => f.startsWith('cnvtr_') && path.extname(f));
+        const full = files.length ? path.join(dir, files[0]) : null;
+        return full && fs.existsSync(full) ? full : null;
+      } catch {
+        return null;
+      }
+    };
+    const filePath = (lastPath && fs.existsSync(lastPath) ? lastPath : null) || findInDir();
+    if (filePath) {
+      resolve(filePath);
+      return;
+    }
+    if (code !== 0) {
+      const msg = stderr.trim() || `yt-dlp exited ${code}`;
+      reject(new Error(msg.slice(0, 500)));
+    } else {
+      reject(new Error('yt-dlp did not produce an output file'));
+    }
+  });
+}
+
 async function downloadAudioOnly(url, progressCb) {
   const tmpDir = require('os').tmpdir();
   const outTemplate = path.join(tmpDir, `cnvtr_${Date.now()}_%(id)s.%(ext)s`);
@@ -137,9 +177,12 @@ async function downloadAudioOnly(url, progressCb) {
     '--no-warnings',
     '--no-playlist',
     '-x',
-    '--audio-format', 'best',
-    '--audio-quality', '0',
-    '-o', outTemplate,
+    '--audio-format',
+    'best',
+    '--audio-quality',
+    '0',
+    '-o',
+    outTemplate,
     '--newline',
     '--',
     url.trim(),
@@ -148,48 +191,31 @@ async function downloadAudioOnly(url, progressCb) {
   return new Promise((resolve, reject) => {
     const proc = spawn(ytDlpPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     activeDownloadProc = proc;
-    let lastPath = null;
-    let stderr = '';
-    const onLine = (line) => {
-      const s = line.toString().trim();
-      if (progressCb && s.startsWith('[download]')) progressCb(s);
-      const match = s.match(/Destination:\s*(.+)/);
-      if (match) lastPath = match[1].trim();
-    };
-    proc.stdout?.on('data', (d) => d.toString().split('\n').forEach(onLine));
-    proc.stderr?.on('data', (d) => {
-      const t = d.toString();
-      stderr += t;
-      t.split('\n').forEach(onLine);
-    });
-    proc.on('error', (err) => {
-      if (activeDownloadProc === proc) activeDownloadProc = null;
-      reject(new Error(normalizeYtDlpError(err)));
-    });
-    proc.on('close', (code) => {
-      if (activeDownloadProc === proc) activeDownloadProc = null;
-      const dir = path.dirname(outTemplate);
-      const findInDir = () => {
-        try {
-          const files = fs.readdirSync(dir).filter((f) => f.startsWith('cnvtr_') && path.extname(f));
-          const full = files.length ? path.join(dir, files[0]) : null;
-          return full && fs.existsSync(full) ? full : null;
-        } catch {
-          return null;
-        }
-      };
-      const filePath = (lastPath && fs.existsSync(lastPath) ? lastPath : null) || findInDir();
-      if (filePath) {
-        resolve(filePath);
-        return;
-      }
-      if (code !== 0) {
-        const msg = stderr.trim() || `yt-dlp exited ${code}`;
-        reject(new Error(msg.slice(0, 500)));
-      } else {
-        reject(new Error('yt-dlp did not produce an output file'));
-      }
-    });
+    attachYtDlpSpawnHandlers(proc, outTemplate, progressCb, resolve, reject);
+  });
+}
+
+async function downloadVideoMp4(url, progressCb) {
+  const tmpDir = require('os').tmpdir();
+  const outTemplate = path.join(tmpDir, `cnvtr_${Date.now()}_%(id)s.%(ext)s`);
+  const args = [
+    '--no-warnings',
+    '--no-playlist',
+    '-f',
+    'bv*+ba/b',
+    '--merge-output-format',
+    'mp4',
+    '-o',
+    outTemplate,
+    '--newline',
+    '--',
+    url.trim(),
+  ];
+  const ytDlpPath = getYtDlpPath();
+  return new Promise((resolve, reject) => {
+    const proc = spawn(ytDlpPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    activeDownloadProc = proc;
+    attachYtDlpSpawnHandlers(proc, outTemplate, progressCb, resolve, reject);
   });
 }
 
@@ -197,6 +223,7 @@ module.exports = {
   validateUrls: validateUrlsFromBackend,
   fetchInfo,
   downloadAudioOnly,
+  downloadVideoMp4,
   cancelActiveDownload,
   getYtDlpPath,
   isYtDlpAvailable,

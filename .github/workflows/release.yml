@@ -1,12 +1,8 @@
-# Build self-contained installers and publish to GitHub Releases when you push a version tag.
+# Build all-in-one installers (yt-dlp + FFmpeg via npm) and publish to GitHub Releases on tag v*.
 #
-# How to ship a build others can download:
-#   1. Commit and push your main branch.
-#   2. git tag v1.0.0 && git push origin v1.0.0
-#   3. Open the repo on GitHub → Releases → the new tag has .exe + .dmg attached.
+# Public download link after publish: https://github.com/<you>/CNVTR/releases/latest
 #
-# Manual run (Actions → Release): still produces workflow artifacts, but does NOT create a
-# GitHub Release unless the run was triggered by a tag push.
+# Trigger: push tag v1.0.3  OR  Actions → Release → Run workflow (artifacts only; no Release unless tag push).
 name: Release
 
 on:
@@ -31,12 +27,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Bundle yt-dlp and FFmpeg (Windows)
-        shell: pwsh
-        run: ./scripts/ci-bundle-binaries.ps1
-
       - name: Install dependencies
         run: npm ci
+
+      - name: Bundle yt-dlp for packager
+        run: npm run bundle:deps
 
       - name: Test and lint
         run: npm test && npm run lint
@@ -61,11 +56,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Bundle yt-dlp and FFmpeg (macOS)
-        run: chmod +x scripts/ci-bundle-binaries.sh && ./scripts/ci-bundle-binaries.sh
-
       - name: Install dependencies
         run: npm ci
+
+      - name: Bundle yt-dlp for packager
+        run: npm run bundle:deps
 
       - name: Test and lint
         run: npm test && npm run lint
@@ -79,27 +74,26 @@ jobs:
           name: cnvtr-macos
           path: release/*.dmg
 
-  publish:
-    name: Publish GitHub Release
+  publish-release:
     needs: [build-windows, build-mac]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download Windows installer
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: cnvtr-windows
-          path: artifacts/win
+          path: win
 
-      - name: Download macOS installer
+      - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
           name: cnvtr-macos
-          path: artifacts/mac
+          path: mac
 
-      - name: Create GitHub Release with installers
+      - name: Create GitHub Release and attach installers
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -109,5 +103,5 @@ jobs:
           prerelease: false
           fail_on_unmatched_files: true
           files: |
-            artifacts/win/*.exe
-            artifacts/mac/*.dmg
+            win/*.exe
+            mac/*.dmg

@@ -1,6 +1,8 @@
-# FFmpeg for CNVTR
+# FFmpeg for CNVTR (optional override)
 
-Place **ffmpeg.exe** (and optionally **ffprobe.exe**) in this folder so CNVTR can convert audio without needing FFmpeg on your system PATH.
+Release builds already include **ffmpeg** and **ffprobe** via npm (`ffmpeg-static`, `ffprobe-static`). Use this folder only if you want to **override** those with your own binaries.
+
+Place **ffmpeg.exe** (and optionally **ffprobe.exe**) in this folder on Windows, or **`ffmpeg`** / **`ffprobe`** on macOS/Linux, so CNVTR uses them instead of the bundled versions or PATH.
 
 ---
 

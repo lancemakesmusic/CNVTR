@@ -1,6 +1,11 @@
 node_modules/
 dist/
 release/
+
+# Downloaded by scripts/bundle-ytdlp.js (do not commit)
+yt-dlp/yt-dlp
+yt-dlp/yt-dlp_macos
+yt-dlp/yt-dlp.exe
 *.log
 .DS_Store
 Thumbs.db

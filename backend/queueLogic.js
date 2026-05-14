@@ -5,7 +5,8 @@ function getOutputPath(outputDir, info, format, template) {
   const safe = (s) => (s || 'Unknown').replace(/[<>:"/\\|?*]/g, '_').slice(0, 100);
   const title = safe(info?.title);
   const artist = safe(info?.uploader || info?.artist);
-  const ext = format === 'wav' ? '.wav' : format === 'flac' ? '.flac' : '.mp3';
+  const ext =
+    format === 'wav' ? '.wav' : format === 'flac' ? '.flac' : format === 'mp4' ? '.mp4' : '.mp3';
   let baseName;
   if (template === 'artist-title') {
     baseName = `${artist} - ${title}`;
@@ -30,7 +31,7 @@ function formatOptions(userOptions) {
   const bitrate = userOptions?.bitrate ?? bitrateMap[quality] ?? 320;
   const sampleRate = userOptions?.sampleRate || 44100;
   return {
-    format: format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : 'mp3',
+    format: format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : format === 'mp4' ? 'mp4' : 'mp3',
     bitrate: format === 'mp3' ? bitrate : 320,
     sampleRate: Number(sampleRate) || 44100,
     normalize: !!userOptions?.normalize,

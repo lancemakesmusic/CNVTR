@@ -63,7 +63,7 @@ They pick their OS, download, install. No Git or Node required.
 
 ## 5. macOS note (Apple Silicon vs Intel)
 
-CI builds the `.dmg` on **macos-latest** (Apple Silicon) with an **arm64** FFmpeg bundle. That installer is best for **M1/M2/M3** Macs. **Intel Mac** users may need to build locally with an x86_64 FFmpeg in `ffmpeg/` and run `npm run build:mac`, then share that DMG separately if needed.
+CI builds on **macos-latest** (typically Apple Silicon). The bundled **ffmpeg-static** binary matches that runner. **Intel-only** Mac users may need to build locally on an Intel Mac (or produce a separate x64 build) if the published DMG does not run on their hardware.
 
 ## 6. README download link
 

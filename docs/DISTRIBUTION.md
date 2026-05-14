@@ -6,33 +6,25 @@ How to build installers and make CNVTR available for download like commercial so
 
 ## 1. Build the installers
 
-### All-in-one (recommended before `npm run build:*`)
+### Default (all-in-one for end users)
 
-So the installer **includes yt-dlp and FFmpeg** (end users do not install them separately):
-
-| Platform | Command |
-|----------|---------|
-| **Windows** | `npm run bundle:ci:win` |
-| **macOS** | `npm run bundle:ci:mac` |
-
-These scripts download current binaries into `yt-dlp/` and `ffmpeg/`. The same steps run automatically in **GitHub Actions** before each release build.
-
-Then build:
+`npm run build:win` and `npm run build:mac` already run **`npm run bundle:deps`**, which downloads **yt-dlp** for the current OS into `yt-dlp/`. **FFmpeg** and **ffprobe** are bundled via **`ffmpeg-static`** / **`ffprobe-static`** (no separate FFmpeg install for users).
 
 | Platform | Command | Output |
 |----------|---------|--------|
-| **Windows** | `npm run build:win` | `release/CNVTR Setup 1.0.0.exe` (installer) |
-| **macOS** | `npm run build:mac` | `release/CNVTR-1.0.0.dmg` |
+| **Windows** | `npm run build:win` | `release/CNVTR Setup x.y.z.exe` |
+| **macOS** | `npm run build:mac` | `release/CNVTR-x.y.z*.dmg` |
+
+### Optional: full `ffmpeg/` folder on disk
+
+If you prefer shipping binaries under `ffmpeg/` (instead of relying on npm static builds only), run **`npm run bundle:ci:win`** or **`npm run bundle:ci:mac`** before `vite build` (see `scripts/`). The app prefers `ffmpeg/` when present.
 
 - Build **Windows** installers on a Windows PC.
 - Build **macOS** installers on a Mac (or use CI; see below).
 
-After the build, the `release/` folder contains:
+After the build, the `release/` folder contains the installer (and `win-unpacked/` on Windows).
 
-- **Windows:** `CNVTR Setup 1.0.0.exe` (run this to install), plus `win-unpacked/` (portable folder).
-- **macOS:** `CNVTR-1.0.0.dmg` (disk image users double‑click to install).
-
-Bump `version` in `package.json` before each release so filenames and the app’s “About” show the right version.
+Bump `version` in `package.json` before each release so filenames match.
 
 ---
 
@@ -64,9 +56,9 @@ Step-by-step for first-time GitHub setup: **[SHARE-ON-GITHUB.md](SHARE-ON-GITHUB
 
 ## 3. What users need (dependencies)
 
-- **Nothing extra** if they install a **GitHub Release** build from this repo: CI bundles **yt-dlp** and **FFmpeg** into the installer.
-- **Internet** is still required to fetch media from YouTube and other platforms.
-- If someone builds from source **without** running the bundle scripts, they must install yt-dlp / FFmpeg or place them in `yt-dlp/` and `ffmpeg/` as described in the main README.
+- **Nothing extra** for a normal release build: **yt-dlp** is bundled via `bundle:deps`, and **FFmpeg/ffprobe** ship with the app via **`ffmpeg-static`** / **`ffprobe-static`**.
+- **Internet** is required to fetch media from YouTube and other platforms.
+- Optional: place custom binaries in `yt-dlp/` or `ffmpeg/` before building; the app prefers those paths.
 
 ---
 
@@ -97,7 +89,7 @@ You can’t build a macOS `.dmg` on a Windows PC; you need a Mac or **GitHub Act
 
 1. Push your code to GitHub.
 2. `git tag v1.0.0 && git push origin v1.0.0` (use your real version).
-3. Wait for the **Release** workflow. It bundles **yt-dlp + FFmpeg**, runs tests and lint, builds both platforms, then **publishes a GitHub Release** with the `.exe` and `.dmg`.
+3. Wait for the **Release** workflow. It runs **`npm run bundle:deps`**, tests, lint, builds both platforms, then **publishes a GitHub Release** with the `.exe` and `.dmg`.
 
 **Test builds without a Release:** **Actions → Release → Run workflow** still produces **workflow artifacts** (download from the run summary), but does **not** create a GitHub Release unless the run was triggered by a **tag push**.
 
@@ -108,10 +100,11 @@ Workflow file: `.github/workflows/release.yml`.
 ## 6. Checklist before publishing
 
 - [ ] Bump `version` in `package.json`.
-- [ ] For **local** builds: run `npm run bundle:ci:win` / `bundle:ci:mac` (or keep your own copies in `yt-dlp/` and `ffmpeg/`). **CI** does this automatically.
-- [ ] Add `assets/icon.ico` (Windows) and `assets/icon.icns` (macOS) so the app has an icon.
-- [ ] Run `npm run build:win` (and/or `build:mac`) and test the installer on a clean machine or VM.
-- [ ] Push a **`v*`** tag to GitHub so the Release workflow publishes installers, or upload installers manually to a GitHub Release.
-- [ ] Update the **Download** link in `README.md` with your real GitHub username/repo.
+- [ ] Run `npm run build:win` / `npm run build:mac` (includes `bundle:deps` for **yt-dlp**). Network required for that download step.
+- [ ] (Optional) Run `npm run bundle:ci:*` if you want a full `ffmpeg/` directory in the shipped app.
+- [ ] (Optional) Add `assets/icon.ico` / `assets/icon.icns` for branding (`electron-builder.config.js`).
+- [ ] Test the installer from `release/` on a clean machine or VM.
+- [ ] Push a **`v*`** tag so the Release workflow publishes to GitHub, or upload installers manually.
+- [ ] Point your README “Download” link at `https://github.com/<you>/CNVTR/releases/latest`.
 
-After that, share `https://github.com/<you>/CNVTR/releases/latest` so others can install CNVTR like any other program.
+Build configuration: **`electron-builder.config.js`** (referenced from `package.json` via `"extends"`).

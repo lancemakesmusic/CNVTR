@@ -19,4 +19,18 @@ function getAppRoot() {
   return path.resolve(__dirname, '..');
 }
 
-module.exports = { getAppRoot };
+/**
+ * Binaries cannot execute from inside app.asar; ffmpeg-static lives under node_modules
+ * and is listed in asarUnpack, so remap .../app.asar/... to .../app.asar.unpacked/...
+ */
+function resolveAsarBinaryPath(binaryPath) {
+  if (!binaryPath || typeof binaryPath !== 'string') return binaryPath;
+  const marker = `${path.sep}app.asar${path.sep}`;
+  if (binaryPath.includes(marker)) {
+    const alt = binaryPath.replace(marker, `${path.sep}app.asar.unpacked${path.sep}`);
+    if (fs.existsSync(alt)) return alt;
+  }
+  return binaryPath;
+}
+
+module.exports = { getAppRoot, resolveAsarBinaryPath };

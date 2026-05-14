@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -10,7 +11,7 @@ let mainWindow = null;
 const preloadPath = path.join(__dirname, 'preload.js');
 const indexUrl = isDev
   ? 'http://localhost:5173'
-  : `file://${path.join(__dirname, 'dist', 'index.html')}`;
+  : pathToFileURL(path.join(__dirname, 'dist', 'index.html')).href;
 
 const backendPath = path.join(__dirname, 'backend');
 const safePaths = require(path.join(backendPath, 'safePaths.js'));
@@ -100,7 +101,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0a0a0a',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // Keep native macOS title bar so window is always draggable.
+    titleBarStyle: 'default',
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
