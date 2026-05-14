@@ -11,14 +11,20 @@ export function LogPanel({ lines, onClear }) {
   return (
     <div className="log-panel">
       <div className="log-header">
-        <span>Log</span>
+        <span id="log-panel-title">Log</span>
         {lines.length > 0 && (
-          <button type="button" className="log-clear" onClick={onClear}>
+          <button type="button" className="log-clear" onClick={onClear} aria-label="Clear log">
             Clear
           </button>
         )}
       </div>
-      <div className="log-content">
+      <div
+        className="log-content"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-labelledby="log-panel-title"
+      >
         {lines.length === 0 && (
           <p className="log-empty">Activity will appear here.</p>
         )}

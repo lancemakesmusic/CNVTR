@@ -25,7 +25,7 @@ export function QueuePanel({ queue, onPause, onResume, onCancel }) {
   return (
     <div className="queue-panel">
       <div className="queue-header">
-        <h3>Queue</h3>
+        <h3 id="queue-panel-heading">Queue</h3>
         {hasJobs && (
           <span className="queue-summary">
             {completed}/{jobs.length} done
@@ -49,7 +49,7 @@ export function QueuePanel({ queue, onPause, onResume, onCancel }) {
           </div>
         )}
       </div>
-      <div className="queue-list">
+      <div className="queue-list" role="list" aria-labelledby="queue-panel-heading" aria-live="polite">
         {!hasJobs && (
           <p className="queue-empty">No items. Paste URLs and click Convert.</p>
         )}
@@ -57,6 +57,7 @@ export function QueuePanel({ queue, onPause, onResume, onCancel }) {
           <div
             key={job.id}
             className={`queue-item queue-item--${job.status}`}
+            role="listitem"
           >
             <div className="queue-item-info">
               <span className="queue-item-title">

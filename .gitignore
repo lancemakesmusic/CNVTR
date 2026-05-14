@@ -6,3 +6,8 @@ release/
 Thumbs.db
 .env
 .env.local
+
+# Optional local playlist / cache (omit from public repos if private)
+playlist_youtube.json
+dj_set_import_urls.txt
+dj_set_yt_titles.cache.json

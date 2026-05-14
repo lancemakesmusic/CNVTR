@@ -1,12 +1,25 @@
+import { useEffect, useRef } from 'react';
 import './TermsModal.css';
 
 export function TermsModal({ onAccept }) {
+  const acceptRef = useRef(null);
+
+  useEffect(() => {
+    acceptRef.current?.focus();
+  }, []);
+
   return (
-    <div className="terms-overlay">
-      <div className="terms-modal">
+    <div className="terms-overlay" role="presentation">
+      <div
+        className="terms-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="terms-heading"
+        aria-describedby="terms-body"
+      >
         <div className="terms-logo">CNVTR</div>
-        <h1>Terms of Use</h1>
-        <div className="terms-content">
+        <h1 id="terms-heading">Terms of Use</h1>
+        <div className="terms-content" id="terms-body">
           <p>
             By using CNVTR you agree to the following:
           </p>
@@ -20,7 +33,7 @@ export function TermsModal({ onAccept }) {
             If you do not agree, please close the application.
           </p>
         </div>
-        <button type="button" className="terms-accept" onClick={onAccept}>
+        <button ref={acceptRef} type="button" className="terms-accept" onClick={onAccept}>
           I agree — Continue
         </button>
       </div>

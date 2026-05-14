@@ -127,6 +127,9 @@ export default function App() {
 
   return (
     <div className="app">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <aside className={`sidebar history-panel ${historyOpen ? 'open' : ''}`}>
         <HistoryPanel onClose={() => setHistoryOpen(false)} />
       </aside>
@@ -136,7 +139,7 @@ export default function App() {
         </button>
       )}
 
-      <main className="main">
+      <main className="main" id="main-content" tabIndex={-1}>
         {(!requirements.ytDlpOk || !requirements.ffmpegOk) && (
           <div className="requirements-banner" role="alert">
             {!requirements.ytDlpOk && (

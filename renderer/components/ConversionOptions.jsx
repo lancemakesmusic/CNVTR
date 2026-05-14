@@ -37,8 +37,9 @@ export function ConversionOptions({
     <div className="conversion-options">
       <div className="options-row main-options">
         <div className="option-group">
-          <label>Output format</label>
+          <label htmlFor="co-output-format">Output format</label>
           <select
+            id="co-output-format"
             value={options.outputFormat}
             onChange={(e) => update('outputFormat', e.target.value)}
           >
@@ -48,8 +49,9 @@ export function ConversionOptions({
           </select>
         </div>
         <div className="option-group">
-          <label>Quality</label>
+          <label htmlFor="co-quality">Quality</label>
           <select
+            id="co-quality"
             value={options.qualityPreset}
             onChange={(e) => update('qualityPreset', e.target.value)}
           >
@@ -59,19 +61,24 @@ export function ConversionOptions({
           </select>
         </div>
         <div className="option-group output-dir">
-          <label>Output folder</label>
+          <label htmlFor="co-output-dir-display">Output folder</label>
           <div className="output-dir-row">
             <input
+              id="co-output-dir-display"
               type="text"
               value={outputDir}
               readOnly
               className="output-dir-input"
               placeholder="Default: Downloads/CNVTR"
+              aria-describedby="co-output-dir-hint"
             />
             <button type="button" className="btn btn-secondary btn-small" onClick={onSelectDir}>
               Browse
             </button>
           </div>
+          <span id="co-output-dir-hint" className="visually-hidden">
+            Choose where converted files are saved. Defaults to Downloads slash CNVTR.
+          </span>
         </div>
       </div>
 
@@ -92,13 +99,19 @@ export function ConversionOptions({
           className="advanced-toggle"
           onClick={() => setAdvancedOpen(!advancedOpen)}
           aria-expanded={advancedOpen}
+          aria-controls="co-advanced-panel"
         >
           {advancedOpen ? '▼' : '▶'} Advanced settings
         </button>
       </div>
 
       {advancedOpen && (
-        <div className="advanced-options">
+        <div
+          id="co-advanced-panel"
+          className="advanced-options"
+          role="region"
+          aria-label="Advanced conversion settings"
+        >
           <div className="options-row">
             <div className="option-group">
               <label>Bitrate (MP3)</label>

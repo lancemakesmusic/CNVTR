@@ -3,6 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const { getAppRoot } = require('./paths');
 
+let activeFfmpegCommand = null;
+
+function cancelActiveConvert() {
+  const cmd = activeFfmpegCommand;
+  if (!cmd) return;
+  try {
+    cmd.kill('SIGTERM');
+  } catch (_) {
+    try {
+      cmd.kill('SIGKILL');
+    } catch {
+      void 0;
+    }
+  }
+  activeFfmpegCommand = null;
+}
+
 function getFfmpegDir() {
   return path.join(getAppRoot(), 'ffmpeg');
 }
@@ -108,14 +125,21 @@ function convert(opts) {
         command = command.format('mp3').audioBitrate(bitrate);
     }
 
+    activeFfmpegCommand = command;
     command
       .output(outputPath)
       .on('start', () => {})
       .on('progress', (p) => {
         if (onProgress && p.percent != null) onProgress(Math.min(100, p.percent));
       })
-      .on('end', () => resolve(outputPath))
-      .on('error', (err) => reject(err))
+      .on('end', () => {
+        if (activeFfmpegCommand === command) activeFfmpegCommand = null;
+        resolve(outputPath);
+      })
+      .on('error', (err) => {
+        if (activeFfmpegCommand === command) activeFfmpegCommand = null;
+        reject(err);
+      })
       .run();
   });
 }
@@ -141,4 +165,10 @@ function isFfmpegAvailable() {
   }
 }
 
-module.exports = { convert, getFfmpegPath, getFfmpegMissingMessage, isFfmpegAvailable };
+module.exports = {
+  convert,
+  cancelActiveConvert,
+  getFfmpegPath,
+  getFfmpegMissingMessage,
+  isFfmpegAvailable,
+};

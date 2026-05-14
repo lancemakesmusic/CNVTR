@@ -71,27 +71,36 @@ export function UrlInput({ onConvert, addLog }) {
 
   return (
     <div className="url-input-wrap">
-      <div
-        className="url-input-area"
-        onPaste={handlePaste}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-      >
-        <textarea
-          className="url-textarea"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={PLACEHOLDER}
-          rows={4}
-          spellCheck={false}
-        />
-      </div>
+      <fieldset className="url-fieldset">
+        <legend className="visually-hidden">Media URLs to convert</legend>
+        <div
+          className="url-input-area"
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          <label htmlFor="cnvtr-url-textarea" className="visually-hidden">
+            Paste streaming URLs
+          </label>
+          <textarea
+            id="cnvtr-url-textarea"
+            className="url-textarea"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={PLACEHOLDER}
+            rows={4}
+            spellCheck={false}
+            aria-label="URLs to convert, one per line or separated by spaces"
+          />
+        </div>
+      </fieldset>
       <div className="url-actions">
         <button
           type="button"
           className="btn btn-secondary"
           onClick={handleValidate}
           disabled={validating || !value.trim()}
+          aria-busy={validating}
         >
           {validating ? 'Validating…' : 'Validate URLs'}
         </button>
@@ -100,6 +109,7 @@ export function UrlInput({ onConvert, addLog }) {
           className="btn btn-convert"
           onClick={handleConvert}
           disabled={!value.trim()}
+          aria-label="Start conversion for valid URLs"
         >
           Convert
         </button>

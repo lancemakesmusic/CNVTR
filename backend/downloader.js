@@ -36,6 +36,27 @@ function normalizeYtDlpError(e) {
   return e?.stderr || e?.message || String(e);
 }
 
+let activeDownloadProc = null;
+
+function cancelActiveDownload() {
+  const p = activeDownloadProc;
+  if (!p || p.killed) return;
+  try {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(p.pid), '/f', '/t'], { stdio: 'ignore' });
+    } else {
+      p.kill('SIGTERM');
+    }
+  } catch (_) {
+    try {
+      p.kill('SIGKILL');
+    } catch {
+      void 0;
+    }
+  }
+  activeDownloadProc = null;
+}
+
 function runYtDlp(args, options = {}) {
   const ytDlpPath = getYtDlpPath();
   return new Promise((resolve, reject) => {
@@ -126,6 +147,7 @@ async function downloadAudioOnly(url, progressCb) {
   const ytDlpPath = getYtDlpPath();
   return new Promise((resolve, reject) => {
     const proc = spawn(ytDlpPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    activeDownloadProc = proc;
     let lastPath = null;
     let stderr = '';
     const onLine = (line) => {
@@ -140,8 +162,12 @@ async function downloadAudioOnly(url, progressCb) {
       stderr += t;
       t.split('\n').forEach(onLine);
     });
-    proc.on('error', (err) => reject(new Error(normalizeYtDlpError(err))));
+    proc.on('error', (err) => {
+      if (activeDownloadProc === proc) activeDownloadProc = null;
+      reject(new Error(normalizeYtDlpError(err)));
+    });
     proc.on('close', (code) => {
+      if (activeDownloadProc === proc) activeDownloadProc = null;
       const dir = path.dirname(outTemplate);
       const findInDir = () => {
         try {
@@ -171,6 +197,7 @@ module.exports = {
   validateUrls: validateUrlsFromBackend,
   fetchInfo,
   downloadAudioOnly,
+  cancelActiveDownload,
   getYtDlpPath,
   isYtDlpAvailable,
   getYtDlpMissingMessage,

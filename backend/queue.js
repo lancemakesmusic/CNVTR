@@ -5,10 +5,10 @@ const { v4: uuidv4 } = require('uuid');
 const downloader = require('./downloader');
 const converter = require('./converter');
 const metadata = require('./metadata');
-const { detectPlatform } = require('./platforms');
+const { getOutputPath, formatOptions } = require('./queueLogic');
+const logger = require('./logger');
 
 const MAX_RETRIES = 2;
-const CONCURRENT = 1; // one at a time for MVP; can increase later
 
 let state = {
   jobs: [],
@@ -22,125 +22,153 @@ function emit(event, data) {
   try {
     sendToRenderer(event, data);
   } catch (e) {
-    console.error('queue emit', e);
+    logger.warn('queue emit failed', { err: String(e.message || e) });
   }
 }
 
-function getOutputPath(outputDir, info, format, template) {
-  const safe = (s) => (s || 'Unknown').replace(/[<>:"/\\|?*]/g, '_').slice(0, 100);
-  const title = safe(info?.title);
-  const artist = safe(info?.uploader || info?.artist);
-  const ext = format === 'wav' ? '.wav' : format === 'flac' ? '.flac' : '.mp3';
-  let baseName;
-  if (template === 'artist-title') {
-    baseName = `${artist} - ${title}`;
-  } else if (template === 'title') {
-    baseName = title;
-  } else {
-    baseName = `${artist} - ${title}`;
-  }
-  let candidate = path.join(outputDir, `${baseName}${ext}`);
-  let n = 0;
-  while (fs.existsSync(candidate)) {
-    n++;
-    candidate = path.join(outputDir, `${baseName} (${n})${ext}`);
-  }
-  return candidate;
+function isRetryableError(err) {
+  const m = ((err && err.message) || String(err)).toLowerCase();
+  if (/canceled|cancelled|killed|sign in to confirm/.test(m)) return false;
+  return /etimedout|econnreset|timeout|temporar|502|503|504|429|network|unavailable/.test(m);
 }
 
-function formatOptions(userOptions) {
-  const format = (userOptions?.outputFormat || 'mp3').toLowerCase();
-  const quality = userOptions?.qualityPreset || 'studio';
-  const bitrateMap = { standard: 192, high: 256, studio: 320, lossless: 320 };
-  const bitrate = userOptions?.bitrate ?? bitrateMap[quality] ?? 320;
-  const sampleRate = userOptions?.sampleRate || 44100;
-  return {
-    format: format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : 'mp3',
-    bitrate: format === 'mp3' ? bitrate : 320,
-    sampleRate: Number(sampleRate) || 44100,
-    normalize: !!userOptions?.normalize,
-    trimStart: userOptions?.trimStart != null ? Number(userOptions.trimStart) : undefined,
-    trimEnd: userOptions?.trimEnd != null ? Number(userOptions.trimEnd) : undefined,
-    mono: !!userOptions?.mono,
-    removeSilence: !!userOptions?.removeSilence,
-    fileNameTemplate: userOptions?.fileNameTemplate || 'artist-title',
-  };
-}
-
-async function processOne(itemId, url, options, outputDir, openFolderWhenDone) {
-  const job = state.jobs.find((j) => j.id === itemId);
+async function processOne(job, url, options, outputDir, openFolderWhenDone) {
   if (!job) return;
-  let info = null;
-  let inputPath = null;
-  let outputPath = null;
+  const itemId = job.id;
   const opts = formatOptions(options);
+  let lastErr = null;
 
-  try {
-    job.status = 'downloading';
-    emit('queue-update', { jobs: state.jobs });
-    emit('job-progress', { id: itemId, phase: 'info', percent: 0 });
-    const infoResult = await downloader.fetchInfo(url);
-    if (!infoResult.ok) {
-      throw new Error(infoResult.error || 'Failed to get info');
-    }
-    info = infoResult;
-    job.info = info;
-
-    emit('job-progress', { id: itemId, phase: 'download', percent: 5 });
-    inputPath = await downloader.downloadAudioOnly(url, (line) => {
-      emit('job-log', { id: itemId, line });
-    });
-    emit('job-progress', { id: itemId, phase: 'download', percent: 70 });
-
-    outputPath = getOutputPath(outputDir, info, opts.format, opts.fileNameTemplate);
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-
-    job.status = 'converting';
-    emit('queue-update', { jobs: state.jobs });
-    emit('job-progress', { id: itemId, phase: 'convert', percent: 75 });
-    await converter.convert({
-      inputPath,
-      outputPath,
-      format: opts.format,
-      bitrate: opts.bitrate,
-      sampleRate: opts.sampleRate,
-      normalize: opts.normalize,
-      trimStart: opts.trimStart,
-      trimEnd: opts.trimEnd,
-      mono: opts.mono,
-      removeSilence: opts.removeSilence,
-      onProgress: (p) => {
-        emit('job-progress', { id: itemId, phase: 'convert', percent: 75 + (p * 0.2) });
-      },
-    });
-
-    if (opts.format === 'mp3' && info.thumbnail) {
-      await metadata.embedMetadata(outputPath, info, info.thumbnail);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (state.canceled) {
+      job.status = 'failed';
+      job.error = 'Canceled';
+      job.progress = 0;
+      emit('job-done', { id: itemId, success: false, error: job.error });
+      return;
     }
 
-    if (inputPath && fs.existsSync(inputPath)) {
-      try { fs.unlinkSync(inputPath); } catch (_) {}
-    }
+    let info = null;
+    let inputPath = null;
+    let outputPath = null;
 
-    job.status = 'completed';
-    job.outputPath = outputPath;
-    job.progress = 100;
-    emit('job-progress', { id: itemId, phase: 'done', percent: 100 });
-    emit('job-done', { id: itemId, success: true, outputPath, openFolderWhenDone });
-  } catch (err) {
+    try {
+      job.status = 'downloading';
+      job.error = null;
+      emit('queue-update', { jobs: state.jobs });
+      emit('job-progress', { id: itemId, phase: 'info', percent: 0 });
+
+      const infoResult = await downloader.fetchInfo(url);
+      if (!infoResult.ok) {
+        throw new Error(infoResult.error || 'Failed to get info');
+      }
+      info = infoResult;
+      job.info = info;
+
+      emit('job-progress', { id: itemId, phase: 'download', percent: 5 });
+      inputPath = await downloader.downloadAudioOnly(url, (line) => {
+        emit('job-log', { id: itemId, line });
+      });
+      emit('job-progress', { id: itemId, phase: 'download', percent: 70 });
+
+      outputPath = getOutputPath(outputDir, info, opts.format, opts.fileNameTemplate);
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+      job.status = 'converting';
+      emit('queue-update', { jobs: state.jobs });
+      emit('job-progress', { id: itemId, phase: 'convert', percent: 75 });
+      await converter.convert({
+        inputPath,
+        outputPath,
+        format: opts.format,
+        bitrate: opts.bitrate,
+        sampleRate: opts.sampleRate,
+        normalize: opts.normalize,
+        trimStart: opts.trimStart,
+        trimEnd: opts.trimEnd,
+        mono: opts.mono,
+        removeSilence: opts.removeSilence,
+        onProgress: (p) => {
+          emit('job-progress', { id: itemId, phase: 'convert', percent: 75 + (p * 0.2) });
+        },
+      });
+
+      if (opts.format === 'mp3' && info.thumbnail) {
+        await metadata.embedMetadata(outputPath, info, info.thumbnail);
+      }
+
+      if (inputPath && fs.existsSync(inputPath)) {
+        try {
+          fs.unlinkSync(inputPath);
+        } catch (_) {
+          void 0;
+        }
+      }
+
+      job.status = 'completed';
+      job.outputPath = outputPath;
+      job.progress = 100;
+      emit('job-progress', { id: itemId, phase: 'done', percent: 100 });
+      emit('job-done', { id: itemId, success: true, outputPath, openFolderWhenDone });
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (inputPath && fs.existsSync(inputPath)) {
+        try {
+          fs.unlinkSync(inputPath);
+        } catch (_) {
+          void 0;
+        }
+      }
+      if (outputPath && fs.existsSync(outputPath)) {
+        try {
+          fs.unlinkSync(outputPath);
+        } catch (_) {
+          void 0;
+        }
+      }
+
+      if (state.canceled) {
+        job.status = 'failed';
+        job.error = 'Canceled';
+        job.progress = 0;
+        emit('job-done', { id: itemId, success: false, error: job.error });
+        return;
+      }
+
+      const canRetry = attempt < MAX_RETRIES && isRetryableError(err);
+      if (canRetry) {
+        const delayMs = 1200 * (attempt + 1);
+        logger.warn('queue job retry', { id: itemId, attempt: attempt + 1, err: err.message });
+        emit('job-log', {
+          id: itemId,
+          line: `[retry ${attempt + 1}/${MAX_RETRIES}] ${err.message || err} — waiting ${delayMs}ms`,
+        });
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+
+      job.status = 'failed';
+      job.error = err.message || String(err);
+      job.progress = 0;
+      emit('job-done', { id: itemId, success: false, error: job.error });
+      return;
+    }
+  }
+
+  if (lastErr) {
     job.status = 'failed';
-    job.error = err.message || String(err);
+    job.error = lastErr.message || String(lastErr);
     job.progress = 0;
     emit('job-done', { id: itemId, success: false, error: job.error });
-    if (inputPath && fs.existsSync(inputPath)) {
-      try { fs.unlinkSync(inputPath); } catch (_) {}
-    }
   }
 }
 
 async function runQueue(options, openFolderWhenDone) {
   const urls = Array.isArray(options?.urls) ? options.urls : [];
   if (urls.length === 0) return;
+  if (state.running) {
+    throw new Error('A conversion batch is already running. Wait for it to finish or cancel it in the app.');
+  }
   const { outputDir, ...userOptions } = options || {};
   const output = outputDir || path.join(app.getPath('downloads'), 'CNVTR');
   state.running = true;
@@ -159,28 +187,47 @@ async function runQueue(options, openFolderWhenDone) {
   state.jobs = items;
   emit('queue-update', { jobs: state.jobs });
 
-  for (const item of items) {
-    if (state.canceled) break;
-    while (state.paused && !state.canceled) {
-      await new Promise((r) => setTimeout(r, 500));
+  try {
+    for (const item of items) {
+      if (state.canceled) break;
+      while (state.paused && !state.canceled) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      await processOne(item, item.url, userOptions, output, openFolderWhenDone);
+      emit('queue-update', { jobs: state.jobs });
     }
-    await processOne(item.id, item.url, userOptions, output, openFolderWhenDone);
-    emit('queue-update', { jobs: state.jobs });
+  } finally {
+    state.running = false;
+    emit('queue-finished', {});
   }
-
-  state.running = false;
-  emit('queue-finished', {});
 }
 
 function startJob(options, send) {
   if (!options || !Array.isArray(options.urls) || options.urls.length === 0) {
     return { ok: false, error: 'No URLs provided' };
   }
+  if (state.running) {
+    return { ok: false, error: 'A conversion batch is already running.' };
+  }
   sendToRenderer = send;
   runQueue(options, options.openFolderWhenDone).catch((e) => {
     sendToRenderer('queue-error', { error: e.message });
   });
   return { ok: true };
+}
+
+function startJobAwait(options, send) {
+  if (!options || !Array.isArray(options.urls) || options.urls.length === 0) {
+    return Promise.reject(new Error('No URLs provided'));
+  }
+  if (state.running) {
+    return Promise.reject(new Error('A conversion batch is already running.'));
+  }
+  sendToRenderer = typeof send === 'function' ? send : () => {};
+  return runQueue(options, options.openFolderWhenDone).catch((e) => {
+    sendToRenderer('queue-error', { error: e.message });
+    throw e;
+  });
 }
 
 function pause() {
@@ -193,6 +240,8 @@ function resume() {
 
 function cancel() {
   state.canceled = true;
+  downloader.cancelActiveDownload();
+  converter.cancelActiveConvert();
 }
 
 function getStatus() {
@@ -205,6 +254,7 @@ function getStatus() {
 
 module.exports = {
   startJob,
+  startJobAwait,
   pause,
   resume,
   cancel,

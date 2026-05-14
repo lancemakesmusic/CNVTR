@@ -6,7 +6,18 @@ How to build installers and make CNVTR available for download like commercial so
 
 ## 1. Build the installers
 
-On your machine, run:
+### All-in-one (recommended before `npm run build:*`)
+
+So the installer **includes yt-dlp and FFmpeg** (end users do not install them separately):
+
+| Platform | Command |
+|----------|---------|
+| **Windows** | `npm run bundle:ci:win` |
+| **macOS** | `npm run bundle:ci:mac` |
+
+These scripts download current binaries into `yt-dlp/` and `ffmpeg/`. The same steps run automatically in **GitHub Actions** before each release build.
+
+Then build:
 
 | Platform | Command | Output |
 |----------|---------|--------|
@@ -29,15 +40,13 @@ Bump `version` in `package.json` before each release so filenames and the app’
 
 ### Option A: GitHub Releases (free, common for indie apps)
 
-1. Create a **GitHub repository** for CNVTR (public or private).
-2. Push your code and create a **release** (e.g. tag `v1.0.0`).
-3. In that release, **attach** the installer files:
-   - `CNVTR Setup 1.0.0.exe` (Windows)
-   - `CNVTR-1.0.0.dmg` (macOS)
-4. Add short release notes (what’s new, system requirements).
-5. Share the release URL, e.g. `https://github.com/YourName/CNVTR/releases/latest`.
+**Automated (this repo):** Push a **version tag** like `v1.0.0`. The **Release** workflow builds Windows + macOS installers (with yt-dlp and FFmpeg bundled), then **creates a GitHub Release** and attaches the `.exe` and `.dmg`. Share:
 
-Users click “Download” for their OS. No cost, no server to maintain.
+`https://github.com/YourUsername/CNVTR/releases/latest`
+
+Step-by-step for first-time GitHub setup: **[SHARE-ON-GITHUB.md](SHARE-ON-GITHUB.md)**.
+
+**Manual:** You can still build locally, open **Releases → Draft**, and upload the same files yourself. Release notes can describe system requirements (Windows 10+, macOS, internet).
 
 ### Option B: Your own website
 
@@ -55,12 +64,9 @@ Users click “Download” for their OS. No cost, no server to maintain.
 
 ## 3. What users need (dependencies)
 
-- **yt-dlp:** Already bundled if you have the `yt-dlp/` folder in the project (it’s included in the installer). Otherwise users must install it.
-- **FFmpeg:** Not bundled by default. Either:
-  - Tell users to install FFmpeg and add it to PATH (document in README / download page), or
-  - Bundle FFmpeg in the app (e.g. put it in `ffmpeg/` and ship it; your backend already supports that).
-
-Mention on the download page: “Requires FFmpeg on your system PATH, or download the version that includes FFmpeg.”
+- **Nothing extra** if they install a **GitHub Release** build from this repo: CI bundles **yt-dlp** and **FFmpeg** into the installer.
+- **Internet** is still required to fetch media from YouTube and other platforms.
+- If someone builds from source **without** running the bundle scripts, they must install yt-dlp / FFmpeg or place them in `yt-dlp/` and `ffmpeg/` as described in the main README.
 
 ---
 
@@ -83,28 +89,29 @@ We currently have signing **disabled** on Windows so you can build without a cer
 
 ---
 
-## 5. Automated builds (CI) — build Mac on Windows
+## 5. Automated builds (CI)
 
-You can’t build a macOS `.dmg` on a Windows PC; you need a Mac or a cloud Mac. This repo includes **GitHub Actions** to build both installers in the cloud.
+You can’t build a macOS `.dmg` on a Windows PC; you need a Mac or **GitHub Actions** (macOS runner).
 
-**How to use:**
+**Publish installers for download (recommended):**
 
 1. Push your code to GitHub.
-2. **Option A:** In the repo go to **Actions → Release → Run workflow**, then run.  
-   **Option B:** Create a tag and push: `git tag v1.0.0` then `git push origin v1.0.0`.
-3. When the workflow finishes, open the run and download the **cnvtr-windows** and **cnvtr-macos** artifacts (the `.exe` and `.dmg`).
+2. `git tag v1.0.0 && git push origin v1.0.0` (use your real version).
+3. Wait for the **Release** workflow. It bundles **yt-dlp + FFmpeg**, runs tests and lint, builds both platforms, then **publishes a GitHub Release** with the `.exe` and `.dmg`.
 
-The workflow (`.github/workflows/release.yml`) runs `npm run build:win` on Windows and `npm run build:mac` on macOS, then uploads the installers as artifacts.
+**Test builds without a Release:** **Actions → Release → Run workflow** still produces **workflow artifacts** (download from the run summary), but does **not** create a GitHub Release unless the run was triggered by a **tag push**.
+
+Workflow file: `.github/workflows/release.yml`.
 
 ---
 
 ## 6. Checklist before publishing
 
 - [ ] Bump `version` in `package.json`.
-- [ ] Ensure `yt-dlp/` (and optionally `ffmpeg/`) is in the repo so the installer includes them.
+- [ ] For **local** builds: run `npm run bundle:ci:win` / `bundle:ci:mac` (or keep your own copies in `yt-dlp/` and `ffmpeg/`). **CI** does this automatically.
 - [ ] Add `assets/icon.ico` (Windows) and `assets/icon.icns` (macOS) so the app has an icon.
 - [ ] Run `npm run build:win` (and/or `build:mac`) and test the installer on a clean machine or VM.
-- [ ] Write release notes and document FFmpeg requirement (or that it’s bundled).
-- [ ] Upload the installer(s) to GitHub Releases (or your site) and link from the download page.
+- [ ] Push a **`v*`** tag to GitHub so the Release workflow publishes installers, or upload installers manually to a GitHub Release.
+- [ ] Update the **Download** link in `README.md` with your real GitHub username/repo.
 
-After that, you can share the release or download link so others can install CNVTR like any other program.
+After that, share `https://github.com/<you>/CNVTR/releases/latest` so others can install CNVTR like any other program.

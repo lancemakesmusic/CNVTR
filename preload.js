@@ -1,5 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+/** Main → renderer push channels (allowlist; prevents arbitrary IPC subscription). */
+const ALLOWED_PUSH_CHANNELS = new Set([
+  'job-progress',
+  'job-log',
+  'queue-update',
+  'queue-error',
+  'queue-finished',
+  'job-done',
+]);
+
 contextBridge.exposeInMainWorld('cnvtr', {
   getDefaultOutputDir: () => ipcRenderer.invoke('get-default-output-dir'),
   selectOutputDir: () => ipcRenderer.invoke('select-output-dir'),
@@ -19,6 +29,11 @@ contextBridge.exposeInMainWorld('cnvtr', {
   historyGet: () => ipcRenderer.invoke('history-get'),
   historyAdd: (entry) => ipcRenderer.invoke('history-add', entry),
   on: (channel, fn) => {
+    if (!ALLOWED_PUSH_CHANNELS.has(channel)) {
+      console.error(`[CNVTR] Blocked subscription to disallowed IPC channel: ${channel}`);
+      return () => {};
+    }
+    if (typeof fn !== 'function') return () => {};
     const subscription = (_e, ...args) => fn(...args);
     ipcRenderer.on(channel, subscription);
     return () => ipcRenderer.removeListener(channel, subscription);
