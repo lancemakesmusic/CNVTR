@@ -1,6 +1,5 @@
 name: CI
 
-# Use Node 24 for @actions/* JavaScript (GitHub is deprecating the Node 20 action runtime).
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -14,14 +13,13 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
       - run: npm ci
       - run: npm test
       - run: npm run lint
-      # Block only on critical production issues; devDependency advisories are common on Electron stacks.
       - name: Dependency audit (production)
         run: npm audit --omit=dev --audit-level=critical

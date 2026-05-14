@@ -5,6 +5,7 @@
 # Trigger: push tag v1.0.3  OR  Actions → Release → Run workflow (artifacts only; no Release unless tag push).
 name: Release
 
+# Opt into Node 24 for legacy @actions/* JS until checkout/setup-node v6+ is default everywhere.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -22,12 +23,12 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -43,7 +44,7 @@ jobs:
         run: npm run build:win
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cnvtr-windows
           path: release/*.exe
@@ -51,12 +52,12 @@ jobs:
   build-mac:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -72,7 +73,7 @@ jobs:
         run: npm run build:mac
 
       - name: Upload macOS installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cnvtr-macos
           path: release/*.dmg
@@ -85,13 +86,13 @@ jobs:
       contents: write
     steps:
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: cnvtr-windows
           path: win
 
       - name: Download macOS artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: cnvtr-macos
           path: mac
