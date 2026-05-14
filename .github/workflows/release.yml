@@ -5,10 +5,6 @@
 # Trigger: push tag v1.0.3  OR  Actions → Release → Run workflow (artifacts only; no Release unless tag push).
 name: Release
 
-# Opt into Node 24 for legacy @actions/* JS until checkout/setup-node v6+ is default everywhere.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   workflow_dispatch:
   push:
@@ -33,6 +29,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_ENV: development
 
       - name: Bundle yt-dlp for packager
         run: npm run bundle:deps
@@ -62,6 +60,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_ENV: development
 
       - name: Bundle yt-dlp for packager
         run: npm run bundle:deps

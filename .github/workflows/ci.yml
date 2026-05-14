@@ -1,8 +1,5 @@
 name: CI
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   push:
     branches: [main, master]
@@ -18,7 +15,10 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_ENV: development
       - run: npm test
       - run: npm run lint
       - name: Dependency audit (production)
